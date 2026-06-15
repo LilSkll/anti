@@ -1,0 +1,131 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-ink-900 text-slate-200 font-sans antialiased;
+    background-image: radial-gradient(
+        circle at 15% -10%,
+        rgba(34, 211, 238, 0.08),
+        transparent 45%
+      ),
+      radial-gradient(
+        circle at 85% 5%,
+        rgba(129, 140, 248, 0.1),
+        transparent 50%
+      );
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    background: rgba(34, 211, 238, 0.25);
+    color: #fff;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(129, 140, 248, 0.25);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(129, 140, 248, 0.45);
+    background-clip: padding-box;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-white/[0.03] border border-white/10 backdrop-blur-xl;
+  }
+
+  .glass-strong {
+    @apply bg-white/[0.05] border border-white/10 backdrop-blur-2xl;
+  }
+
+  .card {
+    @apply glass rounded-2xl shadow-card;
+  }
+
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-xs font-medium text-slate-300;
+  }
+
+  .input-base {
+    @apply w-full rounded-xl bg-ink-850/70 border border-white/10 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition focus:border-accent-cyan/60 focus:ring-2 focus:ring-accent-cyan/20;
+  }
+
+  .label-base {
+    @apply block text-xs font-medium uppercase tracking-wider text-slate-400 mb-1.5;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-accent-cyan to-accent-violet px-4 py-2.5 text-sm font-semibold text-ink-950 shadow-glow transition hover:brightness-110 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-white/[0.06] active:scale-[0.98];
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-accent-cyan via-accent-sky to-accent-violet;
+  }
+
+  .section-title {
+    @apply text-lg font-semibold text-slate-100;
+  }
+
+  .section-subtitle {
+    @apply text-sm text-slate-400;
+  }
+}
+
+/* React Flow theme overrides */
+.react-flow__attribution {
+  display: none;
+}
+.react-flow__edge-path {
+  stroke: rgba(129, 140, 248, 0.55);
+  stroke-width: 1.5;
+}
+.react-flow__edge-text {
+  fill: #cbd5e1;
+  font-size: 11px;
+}
+.react-flow__edge-textbg {
+  fill: rgba(11, 16, 32, 0.85);
+}
+.react-flow__controls {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.react-flow__controls button {
+  background: rgba(15, 20, 40, 0.9);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  fill: #cbd5e1;
+}
+.react-flow__controls button:hover {
+  background: rgba(34, 211, 238, 0.15);
+}
+.react-flow__minimap {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
