@@ -6,7 +6,8 @@ import { useSettingsStore } from "@/store/settingsStore";
 export function Layout({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const provider = useSettingsStore((s) => s.provider);
-  const hasKey = useSettingsStore((s) => Boolean(s.apiKeys[s.provider]));
+  const hasKey = useSettingsStore((s) => s.isConfigured());
+  const source = useSettingsStore((s) => s.keySource(s.provider));
 
   return (
     <div className="flex min-h-screen">
@@ -46,7 +47,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     (hasKey ? "bg-accent-emerald" : "bg-accent-amber")
                   }
                 />
-                {hasKey ? `${provider} подключён` : "API-ключ не задан"}
+                {hasKey
+                  ? `${provider} ${source === "env" ? "(env)" : "подключён"}`
+                  : "API-ключ не задан"}
               </span>
               <a
                 href="https://github.com"

@@ -14,4 +14,7 @@ export default defineConfig({
     sourcemap: false,
     chunkSizeWarningLimit: 1500,
   },
+  // Vite injects these at build time — available as import.meta.env.VITE_*
+  // Set them in Vercel Dashboard → Settings → Environment Variables
+  envPrefix: "VITE_",
 });

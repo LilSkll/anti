@@ -18,8 +18,8 @@ export class NotConfiguredError extends Error {
 
 /** Создать провайдера по текущим настройкам */
 export function getProvider(): LLMProvider {
-  const { provider, model, apiKeys } = useSettingsStore.getState();
-  const key = apiKeys[provider];
+  const { provider, model } = useSettingsStore.getState();
+  const key = useSettingsStore.getState().getEffectiveKey(provider);
   if (!key) throw new NotConfiguredError(provider);
 
   switch (provider as ProviderId) {

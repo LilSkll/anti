@@ -9,6 +9,8 @@ import {
   Trash2,
   ArrowRight,
   ShieldCheck,
+  Server,
+  Lock,
 } from "lucide-react";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { Card, Button, Badge } from "@/components/ui/Card";
@@ -26,6 +28,7 @@ export function Settings() {
   const provider = useSettingsStore((s) => s.provider);
   const model = useSettingsStore((s) => s.model);
   const apiKeys = useSettingsStore((s) => s.apiKeys);
+  const envKeys = useSettingsStore((s) => s.envKeys);
   const setProvider = useSettingsStore((s) => s.setProvider);
   const setModel = useSettingsStore((s) => s.setModel);
   const setApiKey = useSettingsStore((s) => s.setApiKey);
@@ -37,12 +40,14 @@ export function Settings() {
   const [visible, setVisible] = useState<Record<string, boolean>>({});
 
   const activeConfig = PROVIDERS[provider];
+  const activeEnvKey = envKeys[provider];
+  const activeLocalKey = apiKeys[provider];
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
       <SectionTitle
         title="Настройки API"
-        subtitle="Ключи провайдеров LLM хранятся локально в браузере"
+        subtitle="Провайдеры, модели и ключи — env-переменные или ручной ввод"
         icon={<SettingsIcon className="h-5 w-5" />}
       />
 
@@ -57,7 +62,9 @@ export function Settings() {
           {PROVIDER_IDS.map((p) => {
             const cfg = PROVIDERS[p];
             const active = provider === p;
-            const configured = Boolean(apiKeys[p]);
+            const hasEnv = Boolean(envKeys[p]);
+            const hasLocal = Boolean(apiKeys[p]);
+            const configured = hasEnv || hasLocal;
             return (
               <button
                 key={p}
@@ -88,7 +95,7 @@ export function Settings() {
                     )}
                   />
                   <span className="text-xs text-slate-400">
-                    {configured ? "ключ задан" : "ключ не задан"}
+                    {hasEnv ? "ключ из env" : hasLocal ? "ключ задан" : "ключ не задан"}
                   </span>
                 </div>
               </button>
@@ -103,7 +110,7 @@ export function Settings() {
           <h3 className="text-sm font-semibold text-slate-200">
             Ключ API — {activeConfig.label}
           </h3>
-          {apiKeys[provider] && (
+          {activeLocalKey && !activeEnvKey && (
             <Button
               variant="ghost"
               className="px-3 py-1.5 text-xs"
@@ -119,22 +126,48 @@ export function Settings() {
         </div>
         <p className="mb-3 text-xs text-slate-500">{activeConfig.hint}</p>
 
+        {/* Env key banner */}
+        {activeEnvKey && (
+          <div className="mb-4 flex items-center gap-2.5 rounded-xl border border-accent-cyan/20 bg-accent-cyan/[0.06] px-4 py-3">
+            <Server className="h-4 w-4 shrink-0 text-accent-cyan" />
+            <div>
+              <div className="text-xs font-medium text-accent-cyan">
+                Ключ из environment variable
+              </div>
+              <div className="text-[11px] text-slate-400">
+                Предустановлен через Vercel / .env.local ·{" "}
+                <code className="font-mono text-slate-300">
+                  VITE_{provider.toUpperCase()}_API_KEY
+                </code>
+                · удалять нельзя
+              </div>
+            </div>
+            <Lock className="ml-auto h-3.5 w-3.5 shrink-0 text-slate-500" />
+          </div>
+        )}
+
         <div className="flex gap-2">
           <div className="relative flex-1">
             <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
             <input
               type={visible[provider] ? "text" : "password"}
-              value={draftKeys[provider]}
-              onChange={(e) =>
+              value={activeEnvKey ? "••••••••••••••••••••••" : draftKeys[provider]}
+              onChange={(e) => {
+                if (activeEnvKey) return; // env-ключ нельзя редактировать
                 setDraftKeys((d) => ({
                   ...d,
                   [provider]: e.target.value,
-                }))
+                }));
+              }}
+              placeholder={
+                activeEnvKey
+                  ? "Ключ предустановлен из env"
+                  : `Вставьте ключ ${activeConfig.label}`
               }
-              placeholder={`Вставьте ключ ${activeConfig.label}`}
-              className="input-base pl-9 pr-10 font-mono"
+              className="input-base pl-9 pr-10 font-mono disabled:opacity-60"
               autoComplete="off"
               spellCheck={false}
+              disabled={!!activeEnvKey}
             />
             <button
               type="button"
@@ -151,13 +184,15 @@ export function Settings() {
               )}
             </button>
           </div>
-          <Button
-            onClick={() => setApiKey(provider, draftKeys[provider].trim())}
-            disabled={!draftKeys[provider].trim()}
-          >
-            <Check className="h-4 w-4" />
-            Сохранить
-          </Button>
+          {!activeEnvKey && (
+            <Button
+              onClick={() => setApiKey(provider, draftKeys[provider].trim())}
+              disabled={!draftKeys[provider].trim()}
+            >
+              <Check className="h-4 w-4" />
+              Сохранить
+            </Button>
+          )}
         </div>
       </Card>
 
@@ -195,9 +230,10 @@ export function Settings() {
             Конфиденциальность
           </h3>
           <p className="mt-1 text-xs leading-relaxed text-slate-400">
-            Ключи и история анализа хранятся только в <code>localStorage</code>{" "}
-            вашего браузера. Текст запроса отправляется напрямую выбранному
-            провайдеру LLM по HTTPS. Никакой промежуточный сервер не используется.
+            Ключи из env-переменных встроены в сборку и доступны на всех устройствах.
+            Локальные ключи хранятся в <code>localStorage</code> браузера.
+            Текст запроса отправляется напрямую выбранному провайдеру LLM по HTTPS.
+            Никакой промежуточный сервер не используется.
           </p>
         </div>
       </Card>

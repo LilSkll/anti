@@ -61,9 +61,28 @@ npm run preview
 2. Framework Preset: **Vite**.
 3. Build Command: `npm run build`.
 4. Output Directory: `dist`.
-5. Environment Variables — **не нужны**. API-ключи пользователь вводит в UI.
+5. **Environment Variables** — добавьте хотя бы один API-ключ (чтобы не вводить ключи на каждом устройстве):
+
+| Переменная | Назначение |
+|------------|-----------|
+| `VITE_GROQ_API_KEY` | Ключ GroqCloud (gsk_...) |
+| `VITE_OPENAI_API_KEY` | Ключ OpenAI (sk-...) |
+| `VITE_GEMINI_API_KEY` | Ключ Google Gemini (AIza...) |
+| `VITE_DEFAULT_PROVIDER` | Провайдер по умолчанию: `groq` / `openai` / `gemini` |
+| `VITE_DEFAULT_MODEL` | Модель по умолчанию (напр. `llama-3.3-70b-versatile`) |
+
+При заданных env-ключах приложение готово к работе сразу — пользователю не нужно ничего вводить. Ключи встраиваются в сборку Vite (`VITE_`-префикс) и доступны на всех устройствах. Локальные ключи в браузере по-прежнему поддерживаются для индивидуального ввода.
 
 `vercel.json` уже настроен для SPA-роутинга.
+
+### Локальная разработка
+
+```bash
+cp .env.example .env.local
+# отредактируйте .env.local — впишите ключи
+npm install
+npm run dev
+```
 
 ## Структура проекта
 
