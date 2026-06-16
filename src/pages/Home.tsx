@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   Sparkles,
   Activity,
+  GraduationCap,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { hasAnyConfiguredKey } from "@/store/settingsStore";
@@ -230,6 +231,31 @@ export function Home() {
           </Card>
         </section>
       )}
+      {/* Об авторе */}
+      <section>
+        <Card className="flex flex-col items-start gap-4 border-white/10 bg-white/[0.02] sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-4">
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-accent-cyan/15 to-accent-violet/15 text-accent-cyan ring-1 ring-white/10">
+              <GraduationCap className="h-5 w-5" />
+            </span>
+            <div>
+              <h3 className="text-sm font-semibold text-slate-100">
+                О разработчике
+              </h3>
+              <p className="mt-1 text-sm text-slate-300">
+                <span className="font-medium">Драгунов П. М.</span> — кафедра
+                иностранных языков, Российский университет дружбы народов
+                (РУДН).
+              </p>
+              <p className="mt-1 text-xs text-slate-500">
+                Платформа создана как исследовательский инструмент для
+                лингвистического анализа текстов человека и искусственного
+                интеллекта.
+              </p>
+            </div>
+          </div>
+        </Card>
+      </section>
     </div>
   );
 }

@@ -59,8 +59,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
 
         <footer className="border-t border-white/10 px-6 py-4 text-center text-xs text-slate-500">
-          AI Linguistic Discourse Analyzer · MVP · анализ выполняется локально
-          в браузере
+          <p>
+            AI Linguistic Discourse Analyzer · MVP · анализ выполняется локально
+            в браузере
+          </p>
+          <p className="mt-1.5">
+            Разработчик:{" "}
+            <span className="text-slate-300">Драгунов П. М.</span> · Кафедра
+            иностранных языков{" "}
+            <span className="text-slate-300">РУДН</span>
+          </p>
         </footer>
       </div>
     </div>
