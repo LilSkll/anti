@@ -19,11 +19,12 @@ import { MetricCard } from "@/components/analysis/MetricCard";
 import { HighlightedText } from "@/components/analysis/HighlightedText";
 import { MarkerLegend } from "@/components/analysis/MarkerLegend";
 import { RadarMetrics } from "@/components/charts/RadarMetrics";
-import { ProbabilityDonut } from "@/components/charts/ProbabilityDonut";
 import {
   analyzeMetrics,
   analyzeMarkers,
   analyzeDiscourse,
+  computeHybridAuthorship,
+  computeStatFeatures,
 } from "@/lib/analyze";
 import { hasAnyConfiguredKey } from "@/store/settingsStore";
 import { useAnalysisStore } from "@/store/analysisStore";
@@ -32,8 +33,11 @@ import type {
   TextMetrics,
   Marker,
   DiscourseResult,
+  HybridAuthorship,
 } from "@/types/analysis";
 import { DiscoursePanel } from "@/components/analysis/DiscoursePanel";
+import { AuthorshipPanel } from "@/components/analysis/AuthorshipPanel";
+import type { StatFeatures } from "@/lib/statFeatures";
 
 type Phase = "idle" | "running" | "done" | "error";
 
@@ -46,6 +50,8 @@ export function TextAnalysis() {
   const [error, setError] = useState<string | null>(null);
 
   const [metrics, setMetrics] = useState<TextMetrics | null>(null);
+  const [authorship, setAuthorship] = useState<HybridAuthorship | null>(null);
+  const [statFeatures, setStatFeatures] = useState<StatFeatures | null>(null);
   const [markers, setMarkers] = useState<Marker[]>([]);
   const [discourse, setDiscourse] = useState<DiscourseResult | null>(null);
 
@@ -71,6 +77,8 @@ export function TextAnalysis() {
     setPhase("running");
     setError(null);
     setMetrics(null);
+    setAuthorship(null);
+    setStatFeatures(null);
     setMarkers([]);
     setDiscourse(null);
 
@@ -80,7 +88,13 @@ export function TextAnalysis() {
       setProgress("Расчёт лингвистических метрик…");
       const m = await analyzeMetrics(text, ctrl.signal);
       setMetrics(m);
-      updateCurrent({ metrics: m });
+
+      // Гибридная оценка: объединяем LLM-метрики и локальные стат-признаки
+      const features = computeStatFeatures(text);
+      const hybrid = computeHybridAuthorship(text, m);
+      setStatFeatures(features);
+      setAuthorship(hybrid);
+      updateCurrent({ metrics: m, authorship: hybrid });
 
       setProgress("Выделение языковых маркеров…");
       const mk = await analyzeMarkers(text, ctrl.signal);
@@ -107,6 +121,8 @@ export function TextAnalysis() {
     abortRef.current?.abort();
     setPhase("idle");
     setMetrics(null);
+    setAuthorship(null);
+    setStatFeatures(null);
     setMarkers([]);
     setDiscourse(null);
     setError(null);
@@ -202,33 +218,26 @@ export function TextAnalysis() {
 
       {metrics && (
         <div className="space-y-6 animate-fade-in">
-          {/* Top: gauges + radar */}
-          <div className="grid gap-5 lg:grid-cols-3">
-            <Card className="lg:col-span-1">
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-slate-200">
-                  Авторство
-                </h3>
-                <Badge tone={metrics.humanProbability >= 50 ? "emerald" : "cyan"}>
-                  {metrics.humanProbability >= 50 ? "Человек" : "ИИ"}
-                </Badge>
-              </div>
-              <ProbabilityDonut
-                human={metrics.humanProbability}
-                ai={metrics.aiProbability}
-              />
-            </Card>
-
-            <Card className="lg:col-span-2">
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-slate-200">
-                  Профиль метрик
-                </h3>
-                <span className="text-xs text-slate-500">радар · 0–100</span>
-              </div>
+          {/* Профиль метрик */}
+          <Card>
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-slate-200">
+                Профиль метрик
+              </h3>
+              <span className="text-xs text-slate-500">радар · 0–100</span>
+            </div>
+            <div className="h-72 w-full">
               <RadarMetrics metrics={metrics} />
-            </Card>
-          </div>
+            </div>
+          </Card>
+
+          {/* Гибридная оценка авторства + статистика */}
+          {authorship && statFeatures && (
+            <AuthorshipPanel
+              authorship={authorship}
+              features={statFeatures}
+            />
+          )}
 
           {/* Metric cards */}
           <div>

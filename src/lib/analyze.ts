@@ -5,6 +5,11 @@ import { buildMarkersPrompt } from "@/lib/prompts/markers";
 import { buildDiscoursePrompt } from "@/lib/prompts/discourse";
 import { buildSemioticPrompt } from "@/lib/prompts/semiotic";
 import { buildComparisonPrompt } from "@/lib/prompts/comparison";
+import {
+  computeStatFeatures,
+  computeStatVerdict,
+  type StatFeatures,
+} from "@/lib/statFeatures";
 import type {
   TextMetrics,
   Marker,
@@ -12,6 +17,7 @@ import type {
   SemioticResult,
   ComparisonMetrics,
   SemioticNode,
+  HybridAuthorship,
 } from "@/types/analysis";
 
 async function callJson<T>(
@@ -60,6 +66,50 @@ export async function analyzeMetrics(
   const { system, user } = buildMetricsPrompt(text);
   const data = await callJson<Partial<TextMetrics>>(system, user, signal);
   return normalizeMetrics(data);
+}
+
+// ---------------------------------------------------------------------------
+// Гибридная оценка авторства: LLM-метрики + локальные стат-признаки
+// ---------------------------------------------------------------------------
+
+/**
+ * Объединяет мнение LLM и объективные статистические признаки текста
+ * в единую оценку авторства с доверительным интервалом.
+ *
+ * Веса: LLM = 0.6, статистика = 0.4.
+ * Если стат-признаки ненадёжны (короткий текст), вес LLM возрастает.
+ */
+export function computeHybridAuthorship(
+  text: string,
+  llmMetrics: TextMetrics
+): HybridAuthorship {
+  const features = computeStatFeatures(text);
+  const statVerdict = computeStatVerdict(features);
+
+  const llmAi = llmMetrics.aiProbability;
+  const statAi = statVerdict.statAiProbability;
+
+  // Адаптивный вес: для короткого текста доверяем статистике меньше
+  const statWeight = features.wordCount < 40 ? 0.25 : 0.4;
+  const llmWeight = 1 - statWeight;
+
+  const aiProbability = Math.round(llmAi * llmWeight + statAi * statWeight);
+  const humanProbability = 100 - aiProbability;
+
+  // Погрешность: тем больше, чем сильнее расходятся LLM и стат-оценка
+  const disagreement = Math.abs(llmAi - statAi);
+  const baseMargin = statVerdict.confidence === "high" ? 8 : statVerdict.confidence === "medium" ? 14 : 22;
+  const margin = Math.min(35, baseMargin + Math.round(disagreement / 3));
+
+  return {
+    aiProbability,
+    humanProbability,
+    llmAiProbability: llmAi,
+    statAiProbability: statAi,
+    margin,
+    confidence: statVerdict.confidence,
+    statReasons: statVerdict.reasons,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -194,3 +244,7 @@ export async function analyzeComparison(
     summary: str(data?.summary),
   };
 }
+
+// Ре-экспорт для UI
+export { computeStatFeatures };
+export type { StatFeatures };

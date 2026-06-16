@@ -43,6 +43,27 @@ export interface TextMetrics {
   argumentationDensity: number;
 }
 
+/**
+ * Гибридная оценка авторства: объединяет мнение LLM и локальные
+ * статистические признаки (burstiness, TTR, стоп-слова и др.).
+ */
+export interface HybridAuthorship {
+  /** Финальная вероятность ИИ (взвешенная), 0–100 */
+  aiProbability: number;
+  /** Финальная вероятность человека, 0–100 */
+  humanProbability: number;
+  /** Оценка только по LLM */
+  llmAiProbability: number;
+  /** Оценка только по статистическим признакам */
+  statAiProbability: number;
+  /** Доверительный интервал ± (в пунктах процента) */
+  margin: number;
+  /** Уровень доверия к оценке */
+  confidence: "low" | "medium" | "high";
+  /** Человекочитаемые обоснования статистических признаков */
+  statReasons: string[];
+}
+
 export interface MetricDescriptor {
   key: keyof TextMetrics;
   label: string;
@@ -151,6 +172,7 @@ export interface AnalysisBundle {
   title: string;
   sourceText: string;
   metrics?: TextMetrics;
+  authorship?: HybridAuthorship;
   markers?: Marker[];
   discourse?: DiscourseResult;
   semiotic?: SemioticResult;
