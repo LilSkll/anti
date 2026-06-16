@@ -14,7 +14,7 @@ import { Card, Button, Badge, EmptyState } from "@/components/ui/Card";
 import { ComparisonBar } from "@/components/charts/ComparisonBar";
 import { MiniBar } from "@/components/ui/ScoreGauge";
 import { analyzeComparison } from "@/lib/analyze";
-import { useSettingsStore } from "@/store/settingsStore";
+import { hasAnyConfiguredKey } from "@/store/settingsStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { deriveTitle } from "@/lib/utils";
 import type { ComparisonMetrics } from "@/types/analysis";
@@ -53,7 +53,7 @@ export function Comparison() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ComparisonMetrics | null>(null);
 
-  const hasKey = useSettingsStore((s) => Boolean(s.apiKeys[s.provider]));
+  const hasKey = hasAnyConfiguredKey();
   const resetCurrent = useAnalysisStore((s) => s.resetCurrent);
   const updateCurrent = useAnalysisStore((s) => s.updateCurrent);
   const commitCurrent = useAnalysisStore((s) => s.commitCurrent);
@@ -63,7 +63,7 @@ export function Comparison() {
   async function run() {
     if (!textA.trim() || !textB.trim()) return;
     if (!hasKey) {
-      setError("Не задан API-ключ. Откройте «Настройки API».");
+      setError("API-ключи не заданы. Администратор должен добавить VITE_*_API_KEY в переменные окружения Vercel.");
       setPhase("error");
       return;
     }
@@ -153,7 +153,7 @@ export function Comparison() {
           {!hasKey && (
             <Link to="/settings" className="btn-ghost">
               <SettingsIcon className="h-4 w-4" />
-              Настроить API
+              Как настроить?
             </Link>
           )}
         </div>

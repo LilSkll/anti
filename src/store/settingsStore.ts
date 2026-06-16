@@ -1,7 +1,8 @@
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import type { ProviderId, ProviderConfig, Settings } from "@/types/analysis";
+import type { ProviderId, ProviderConfig } from "@/types/analysis";
 
+// ---------------------------------------------------------------------------
+// Конфиги провайдеров
+// ---------------------------------------------------------------------------
 export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
   openai: {
     id: "openai",
@@ -31,7 +32,8 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
 };
 
 // ---------------------------------------------------------------------------
-// Маппинг providerId → имя env-переменной
+// Ключи берутся ТОЛЬКО из env-переменных Vite (задаются в Vercel / .env.local).
+// Никакого ручного ввода в UI.
 // ---------------------------------------------------------------------------
 const ENV_KEY_MAP: Record<ProviderId, string> = {
   openai: "VITE_OPENAI_API_KEY",
@@ -39,103 +41,121 @@ const ENV_KEY_MAP: Record<ProviderId, string> = {
   groq: "VITE_GROQ_API_KEY",
 };
 
-/** Ключи, вшитые при сборке через VITE_* переменные. Не перезаписываются пользователем. */
-const ENV_KEYS: Partial<Record<ProviderId, string>> = {};
+/** Ключи, встроенные при сборке. Read-only. */
+export const ENV_KEYS: Partial<Record<ProviderId, string>> = {};
 for (const [p, envVar] of Object.entries(ENV_KEY_MAP)) {
   const val = import.meta.env[envVar as keyof ImportMetaEnv] as string | undefined;
   if (val) ENV_KEYS[p as ProviderId] = val;
 }
 
-/** Предустановленный провайдер и модель из env */
-const ENV_PROVIDER = (() => {
-  const p = import.meta.env.VITE_DEFAULT_PROVIDER as string | undefined;
-  if (p && p in PROVIDERS) return p as ProviderId;
-  // Если есть ключи в env — выбираем первого провайдера с ключом
-  for (const pid of Object.keys(ENV_KEYS) as ProviderId[]) {
-    if (ENV_KEYS[pid]) return pid;
-  }
-  return undefined;
-})();
+/** Список провайдеров, для которых задан env-ключ */
+export const CONFIGURED_PROVIDERS: ProviderId[] = (
+  Object.keys(ENV_KEYS) as ProviderId[]
+).filter((p) => Boolean(ENV_KEYS[p]));
 
-interface SettingsState extends Settings {
-  /** Ключи из env — нельзя удалить */
-  envKeys: Partial<Record<ProviderId, string>>;
-  setProvider: (p: ProviderId) => void;
-  setModel: (m: string) => void;
-  setApiKey: (p: ProviderId, key: string) => void;
-  clearApiKey: (p: ProviderId) => void;
-  /** Получить рабочий ключ: сначала localStorage, потом env */
-  getEffectiveKey: (p: ProviderId) => string | undefined;
-  /** Проверить, что хотя бы один провайдер имеет ключ (localStorage или env) */
-  isConfigured: () => boolean;
-  /** Источник ключа: 'env' | 'local' | undefined */
-  keySource: (p: ProviderId) => "env" | "local" | undefined;
+/** Выбрать провайдера по умолчанию: из env, иначе первый доступный */
+function pickDefaultProvider(): ProviderId {
+  const fromEnv = import.meta.env.VITE_DEFAULT_PROVIDER as string | undefined;
+  if (fromEnv && fromEnv in PROVIDERS && ENV_KEYS[fromEnv as ProviderId]) {
+    return fromEnv as ProviderId;
+  }
+  return CONFIGURED_PROVIDERS[0] ?? "groq";
 }
 
-function defaultProviderAndModel(): { provider: ProviderId; model: string } {
-  if (ENV_PROVIDER) {
-    const cfg = PROVIDERS[ENV_PROVIDER];
-    const m = import.meta.env.VITE_DEFAULT_MODEL as string | undefined;
-    return {
-      provider: ENV_PROVIDER,
-      model: m && cfg.models.includes(m) ? m : cfg.defaultModel,
+const DEFAULT_PROVIDER = pickDefaultProvider();
+
+function pickDefaultModel(provider: ProviderId): string {
+  const fromEnv = import.meta.env.VITE_DEFAULT_MODEL as string | undefined;
+  const cfg = PROVIDERS[provider];
+  if (fromEnv && cfg.models.includes(fromEnv)) return fromEnv;
+  return cfg.defaultModel;
+}
+
+/** Получить рабочий ключ для провайдера (только из env) */
+export function getApiKey(provider: ProviderId): string | undefined {
+  return ENV_KEYS[provider];
+}
+
+/** Доступен ли провайдер (есть env-ключ) */
+export function isProviderConfigured(provider: ProviderId): boolean {
+  return Boolean(ENV_KEYS[provider]);
+}
+
+/** Хотя бы один провайдер настроен */
+export function hasAnyConfiguredKey(): boolean {
+  return CONFIGURED_PROVIDERS.length > 0;
+}
+
+// ---------------------------------------------------------------------------
+// UI-настройки: выбранный провайдер и модель (только среди доступных).
+// Эти настройки сохраняются в localStorage, но не критичны.
+// ---------------------------------------------------------------------------
+const STORAGE_KEY = "alda-ui-settings";
+
+interface UISettings {
+  provider: ProviderId;
+  model: string;
+}
+
+function loadUISettings(): UISettings {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<UISettings>;
+      const provider =
+        parsed.provider && ENV_KEYS[parsed.provider as ProviderId]
+          ? (parsed.provider as ProviderId)
+          : DEFAULT_PROVIDER;
+      const model =
+        parsed.model && PROVIDERS[provider].models.includes(parsed.model)
+          ? parsed.model
+          : pickDefaultModel(provider);
+      return { provider, model };
+    }
+  } catch {
+    /* ignore */
+  }
+  return {
+    provider: DEFAULT_PROVIDER,
+    model: pickDefaultModel(DEFAULT_PROVIDER),
+  };
+}
+
+let uiSettings: UISettings = loadUISettings();
+
+const listeners = new Set<() => void>();
+
+function notify() {
+  for (const l of listeners) l();
+}
+
+function persist() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(uiSettings));
+  } catch {
+    /* ignore */
+  }
+}
+
+export const settingsApi = {
+  getState: () => uiSettings,
+  setProvider: (p: ProviderId) => {
+    if (!ENV_KEYS[p]) return; // нельзя выбрать провайдера без ключа
+    uiSettings = {
+      provider: p,
+      model: pickDefaultModel(p),
     };
-  }
-  return { provider: "groq", model: PROVIDERS.groq.defaultModel };
-}
-
-const defaults = defaultProviderAndModel();
-
-export const useSettingsStore = create<SettingsState>()(
-  persist(
-    (set, get) => ({
-      provider: defaults.provider,
-      model: defaults.model,
-      apiKeys: {},
-      envKeys: { ...ENV_KEYS },
-
-      setProvider: (p) =>
-        set({
-          provider: p,
-          model: PROVIDERS[p].defaultModel,
-        }),
-
-      setModel: (m) => set({ model: m }),
-
-      setApiKey: (p, key) =>
-        set((s) => ({ apiKeys: { ...s.apiKeys, [p]: key } })),
-
-      clearApiKey: (p) =>
-        set((s) => {
-          // Не даём удалить env-ключ
-          if (ENV_KEYS[p]) return s;
-          const next = { ...s.apiKeys };
-          delete next[p];
-          return { apiKeys: next };
-        }),
-
-      getEffectiveKey: (p) => {
-        const { apiKeys } = get();
-        return apiKeys[p] || ENV_KEYS[p];
-      },
-
-      isConfigured: () => {
-        const { provider, apiKeys } = get();
-        return Boolean(apiKeys[provider] || ENV_KEYS[provider]);
-      },
-
-      keySource: (p) => {
-        const { apiKeys } = get();
-        if (apiKeys[p]) return "local";
-        if (ENV_KEYS[p]) return "env";
-        return undefined;
-      },
-    }),
-    { name: "alda-settings" }
-  )
-);
-
-/** Быстрый доступ к ключам для провайдеров (без React) */
-export function getEffectiveApiKey(p: ProviderId): string | undefined {
-  return useSettingsStore.getState().getEffectiveKey(p);
-}
+    persist();
+    notify();
+  },
+  setModel: (m: string) => {
+    if (!PROVIDERS[uiSettings.provider].models.includes(m)) return;
+    uiSettings = { ...uiSettings, model: m };
+    persist();
+    notify();
+  },
+  subscribe: (l: () => void) => {
+    listeners.add(l);
+    return () => listeners.delete(l);
+  },
+};

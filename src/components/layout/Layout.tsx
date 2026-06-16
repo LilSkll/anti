@@ -1,13 +1,17 @@
 import { useState } from "react";
-import { Menu, Github, Sparkles } from "lucide-react";
+import { Menu, Sparkles, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Sidebar } from "./Sidebar";
-import { useSettingsStore } from "@/store/settingsStore";
+import { useSettings } from "@/store/useSettings";
+import {
+  CONFIGURED_PROVIDERS,
+  PROVIDERS,
+} from "@/store/settingsStore";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
-  const provider = useSettingsStore((s) => s.provider);
-  const hasKey = useSettingsStore((s) => s.isConfigured());
-  const source = useSettingsStore((s) => s.keySource(s.provider));
+  const { provider } = useSettings();
+  const ready = CONFIGURED_PROVIDERS.length > 0;
+  const providerLabel = PROVIDERS[provider]?.label ?? provider;
 
   return (
     <div className="flex min-h-screen">
@@ -36,30 +40,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <span
                 className={
                   "hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium sm:inline-flex " +
-                  (hasKey
+                  (ready
                     ? "border-accent-emerald/30 bg-accent-emerald/10 text-accent-emerald"
-                    : "border-accent-amber/30 bg-accent-amber/10 text-accent-amber")
+                    : "border-accent-rose/30 bg-accent-rose/10 text-accent-rose")
                 }
               >
-                <span
-                  className={
-                    "h-1.5 w-1.5 rounded-full " +
-                    (hasKey ? "bg-accent-emerald" : "bg-accent-amber")
-                  }
-                />
-                {hasKey
-                  ? `${provider} ${source === "env" ? "(env)" : "подключён"}`
-                  : "API-ключ не задан"}
+                {ready ? (
+                  <CheckCircle2 className="h-3 w-3" />
+                ) : (
+                  <AlertTriangle className="h-3 w-3" />
+                )}
+                {ready ? `${providerLabel} · готово` : "API не настроен"}
               </span>
-              <a
-                href="https://github.com"
-                target="_blank"
-                rel="noreferrer"
-                className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/[0.03] text-slate-400 transition hover:text-slate-200"
-                aria-label="GitHub"
-              >
-                <Github className="h-4 w-4" />
-              </a>
             </div>
           </div>
         </header>

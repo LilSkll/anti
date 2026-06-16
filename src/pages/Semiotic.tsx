@@ -14,7 +14,7 @@ import { SectionTitle } from "@/components/ui/SectionTitle";
 import { Card, Button, Badge, EmptyState } from "@/components/ui/Card";
 import { SemioticGraph } from "@/components/semiotic/SemioticGraph";
 import { analyzeSemiotic } from "@/lib/analyze";
-import { useSettingsStore } from "@/store/settingsStore";
+import { hasAnyConfiguredKey } from "@/store/settingsStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { deriveTitle, cn } from "@/lib/utils";
 import type { SemioticResult, SemioticNodeType } from "@/types/analysis";
@@ -34,7 +34,7 @@ export function Semiotic() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SemioticResult | null>(null);
 
-  const hasKey = useSettingsStore((s) => Boolean(s.apiKeys[s.provider]));
+  const hasKey = hasAnyConfiguredKey();
   const resetCurrent = useAnalysisStore((s) => s.resetCurrent);
   const updateCurrent = useAnalysisStore((s) => s.updateCurrent);
   const commitCurrent = useAnalysisStore((s) => s.commitCurrent);
@@ -44,7 +44,7 @@ export function Semiotic() {
   async function run() {
     if (!text.trim()) return;
     if (!hasKey) {
-      setError("Не задан API-ключ. Откройте «Настройки API».");
+      setError("API-ключи не заданы. Администратор должен добавить VITE_*_API_KEY в переменные окружения Vercel.");
       setPhase("error");
       return;
     }
@@ -119,7 +119,7 @@ export function Semiotic() {
           {!hasKey && (
             <Link to="/settings" className="btn-ghost">
               <SettingsIcon className="h-4 w-4" />
-              Настроить API
+              Как настроить?
             </Link>
           )}
         </div>

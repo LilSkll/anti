@@ -46,9 +46,9 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     to: "/settings",
-    label: "Настройки API",
+    label: "Настройки",
     icon: Settings,
-    desc: "Ключи и провайдеры",
+    desc: "Провайдер и модель",
   },
 ];
 

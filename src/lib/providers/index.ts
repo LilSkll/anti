@@ -2,15 +2,20 @@ import type { LLMProvider } from "./types";
 import { OpenAIProvider } from "./openai";
 import { GeminiProvider } from "./gemini";
 import { GroqProvider } from "./groq";
-import { useSettingsStore } from "@/store/settingsStore";
+import {
+  settingsApi,
+  getApiKey,
+  isProviderConfigured,
+  hasAnyConfiguredKey,
+} from "@/store/settingsStore";
 import type { ProviderId } from "@/types/analysis";
 
 export type { LLMProvider, ChatMessage, ChatOptions } from "./types";
 
 export class NotConfiguredError extends Error {
-  constructor(provider: string) {
+  constructor() {
     super(
-      `Не задан API-ключ для провайдера «${provider}». Откройте раздел «Настройки API».`
+      "API-ключи не заданы. Администратор должен добавить VITE_*_API_KEY в переменные окружения Vercel."
     );
     this.name = "NotConfiguredError";
   }
@@ -18,9 +23,9 @@ export class NotConfiguredError extends Error {
 
 /** Создать провайдера по текущим настройкам */
 export function getProvider(): LLMProvider {
-  const { provider, model } = useSettingsStore.getState();
-  const key = useSettingsStore.getState().getEffectiveKey(provider);
-  if (!key) throw new NotConfiguredError(provider);
+  const { provider, model } = settingsApi.getState();
+  const key = getApiKey(provider);
+  if (!key) throw new NotConfiguredError();
 
   switch (provider as ProviderId) {
     case "openai":
@@ -34,4 +39,5 @@ export function getProvider(): LLMProvider {
   }
 }
 
+export { isProviderConfigured, hasAnyConfiguredKey };
 export { OpenAIProvider, GeminiProvider, GroqProvider };

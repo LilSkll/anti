@@ -12,7 +12,7 @@ import {
   Activity,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
-import { useSettingsStore } from "@/store/settingsStore";
+import { hasAnyConfiguredKey } from "@/store/settingsStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 
 const MODULES = [
@@ -64,13 +64,13 @@ const FEATURES = [
   },
   {
     icon: ShieldCheck,
-    title: "Приватность",
-    text: "Все вычисления в браузере. API-ключи хранятся локально и не покидают ваше устройство.",
+    title: "Из коробки",
+    text: "Ключи предустановлены на сервере. Откройте приложение — и сразу анализируйте, ничего не настраивая.",
   },
 ];
 
 export function Home() {
-  const hasKey = useSettingsStore((s) => Boolean(s.apiKeys[s.provider]));
+  const hasKey = hasAnyConfiguredKey();
   const historyCount = useAnalysisStore((s) => s.history.length);
 
   return (
@@ -215,11 +215,12 @@ export function Home() {
           <Card className="flex flex-col items-start gap-4 bg-gradient-to-r from-accent-cyan/[0.06] to-accent-violet/[0.06] sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h3 className="text-lg font-semibold text-slate-100">
-                Подключите LLM-провайдера
+                API-ключи не настроены
               </h3>
               <p className="mt-1 text-sm text-slate-400">
-                OpenAI, Google Gemini или GroqCloud. Ключ хранится только в
-                вашем браузере.
+                Администратору нужно добавить переменную окружения (например,
+                VITE_GROQ_API_KEY) в настройках проекта на Vercel. После этого
+                приложение заработает из коробки.
               </p>
             </div>
             <Link to="/settings" className="btn-primary">
