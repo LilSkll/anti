@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { Card, Button, Badge, EmptyState } from "@/components/ui/Card";
+import { TextEditor } from "@/components/ui/TextEditor";
 import { SemioticGraph } from "@/components/semiotic/SemioticGraph";
 import { analyzeSemiotic } from "@/lib/analyze";
 import { hasAnyConfiguredKey } from "@/store/settingsStore";
@@ -97,15 +98,11 @@ export function Semiotic() {
       />
 
       <Card>
-        <div className="mb-2 flex items-center justify-between">
-          <label className="label-base mb-0">Текст для семиотического анализа</label>
-          <span className="text-xs text-slate-500">{text.length} симв.</span>
-        </div>
-        <textarea
+        <TextEditor
           value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Вставьте текст — будут выделены ключевые концепты, знаки и семантические поля…"
-          className="input-base min-h-[120px] resize-y leading-relaxed"
+          onChange={setText}
+          minHeight={220}
+          placeholder="Вставьте текст или загрузите документ — будут выделены ключевые концепты, знаки и семантические поля…"
         />
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <Button onClick={run} disabled={running || !text.trim()}>

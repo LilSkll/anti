@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { Card, Button, Badge, EmptyState } from "@/components/ui/Card";
+import { TextEditor } from "@/components/ui/TextEditor";
 import { ComparisonBar } from "@/components/charts/ComparisonBar";
 import { MiniBar } from "@/components/ui/ScoreGauge";
 import { analyzeComparison } from "@/lib/analyze";
@@ -106,36 +107,22 @@ export function Comparison() {
 
       <Card>
         <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <label className="label-base flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-accent-cyan" />
-              Текст A
-            </label>
-            <textarea
-              value={textA}
-              onChange={(e) => setTextA(e.target.value)}
-              placeholder="Первый текст…"
-              className="input-base min-h-[120px] resize-y leading-relaxed"
-            />
-            <div className="mt-1 text-right text-xs text-slate-500">
-              {textA.length} симв.
-            </div>
-          </div>
-          <div>
-            <label className="label-base flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-accent-violet" />
-              Текст B
-            </label>
-            <textarea
-              value={textB}
-              onChange={(e) => setTextB(e.target.value)}
-              placeholder="Второй текст…"
-              className="input-base min-h-[120px] resize-y leading-relaxed"
-            />
-            <div className="mt-1 text-right text-xs text-slate-500">
-              {textB.length} симв.
-            </div>
-          </div>
+          <TextEditor
+            value={textA}
+            onChange={setTextA}
+            minHeight={220}
+            label="Текст A"
+            dotColor="cyan"
+            placeholder="Первый текст или загрузите .docx…"
+          />
+          <TextEditor
+            value={textB}
+            onChange={setTextB}
+            minHeight={220}
+            label="Текст B"
+            dotColor="violet"
+            placeholder="Второй текст или загрузите .docx…"
+          />
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-3">

@@ -2,12 +2,19 @@ import { cn } from "@/lib/utils";
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   glow?: boolean;
+  /** Лёгкий подъём и свечение при наведении */
+  interactive?: boolean;
 }
 
-export function Card({ className, glow, ...props }: CardProps) {
+export function Card({ className, glow, interactive, ...props }: CardProps) {
   return (
     <div
-      className={cn("card p-5", glow && "shadow-glow", className)}
+      className={cn(
+        "card p-5",
+        glow && "shadow-glow",
+        interactive && "hover-lift glow-on-hover",
+        className
+      )}
       {...props}
     />
   );

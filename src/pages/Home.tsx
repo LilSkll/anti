@@ -93,7 +93,7 @@ export function Home() {
 
           <h1 className="mt-6 max-w-4xl text-4xl font-extrabold leading-tight tracking-tight text-slate-50 sm:text-5xl lg:text-6xl">
             AI Linguistic{" "}
-            <span className="text-gradient">Discourse Analyzer</span>
+            <span className="text-gradient-animated">Discourse Analyzer</span>
           </h1>
 
           <p className="mt-5 max-w-3xl text-lg leading-relaxed text-slate-300">
@@ -148,14 +148,17 @@ export function Home() {
           </div>
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid gap-5 stagger sm:grid-cols-2">
           {MODULES.map((m) => {
             const Icon = m.icon;
             return (
               <Link key={m.to} to={m.to} className="group block">
-                <Card className="relative h-full overflow-hidden transition group-hover:border-white/20 group-hover:bg-white/[0.05]">
+                <Card
+                  interactive
+                  className="relative h-full overflow-hidden group-hover:border-white/20 group-hover:bg-white/[0.05]"
+                >
                   <div
-                    className={`pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-gradient-to-br ${m.tone} blur-2xl`}
+                    className={`pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-gradient-to-br ${m.tone} blur-2xl transition duration-500 group-hover:scale-125`}
                   />
                   <div className="relative flex items-start gap-4">
                     <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-white/10 to-white/[0.02] text-accent-cyan ring-1 ring-white/10">

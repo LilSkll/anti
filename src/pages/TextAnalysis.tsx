@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { Card, Button, Badge, EmptyState } from "@/components/ui/Card";
+import { TextEditor } from "@/components/ui/TextEditor";
 import { MetricCard } from "@/components/analysis/MetricCard";
 import { HighlightedText } from "@/components/analysis/HighlightedText";
 import { MarkerLegend } from "@/components/analysis/MarkerLegend";
@@ -148,25 +149,19 @@ export function TextAnalysis() {
 
       {/* Input */}
       <Card>
-        <div className="mb-2 flex items-center justify-between">
-          <label className="label-base mb-0">Исходный текст</label>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setText(SAMPLE)}
-              className="text-xs text-slate-400 underline-offset-2 hover:text-accent-cyan hover:underline"
-            >
-              Вставить пример
-            </button>
-            <span className="text-xs text-slate-500">
-              {text.length} симв.
-            </span>
-          </div>
+        <div className="mb-3 flex items-center justify-end">
+          <button
+            onClick={() => setText(SAMPLE)}
+            className="text-xs text-slate-400 underline-offset-2 transition hover:text-accent-cyan hover:underline"
+          >
+            Вставить пример
+          </button>
         </div>
-        <textarea
+        <TextEditor
           value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Вставьте текст для анализа…"
-          className="input-base min-h-[140px] resize-y leading-relaxed"
+          onChange={setText}
+          minHeight={260}
+          placeholder="Вставьте текст для анализа или загрузите документ .docx / .txt…"
         />
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
