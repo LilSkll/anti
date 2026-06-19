@@ -5,6 +5,7 @@ import { buildMarkersPrompt } from "@/lib/prompts/markers";
 import { buildDiscoursePrompt } from "@/lib/prompts/discourse";
 import { buildSemioticPrompt } from "@/lib/prompts/semiotic";
 import { buildComparisonPrompt } from "@/lib/prompts/comparison";
+import { trimForLLM } from "@/lib/textTrim";
 import {
   computeStatFeatures,
   computeStatVerdict,
@@ -19,6 +20,11 @@ import type {
   SemioticNode,
   HybridAuthorship,
 } from "@/types/analysis";
+
+export interface AnalysisInfo {
+  /** Сообщение об автообрезке (null если не было) */
+  trimNotice?: string | null;
+}
 
 async function callJson<T>(
   system: string,
@@ -63,7 +69,8 @@ export async function analyzeMetrics(
   text: string,
   signal?: AbortSignal
 ): Promise<TextMetrics> {
-  const { system, user } = buildMetricsPrompt(text);
+  const trimmed = trimForLLM(text);
+  const { system, user } = buildMetricsPrompt(trimmed.text);
   const data = await callJson<Partial<TextMetrics>>(system, user, signal);
   return normalizeMetrics(data);
 }
@@ -134,7 +141,8 @@ export async function analyzeMarkers(
   text: string,
   signal?: AbortSignal
 ): Promise<Marker[]> {
-  const { system, user } = buildMarkersPrompt(text);
+  const trimmed = trimForLLM(text);
+  const { system, user } = buildMarkersPrompt(trimmed.text);
   const data = await callJson<{ markers?: unknown }>(system, user, signal);
   return normalizeMarkers(data?.markers);
 }
@@ -151,7 +159,8 @@ export async function analyzeDiscourse(
   text: string,
   signal?: AbortSignal
 ): Promise<DiscourseResult> {
-  const { system, user } = buildDiscoursePrompt(text);
+  const trimmed = trimForLLM(text);
+  const { system, user } = buildDiscoursePrompt(trimmed.text);
   const data = await callJson<Partial<DiscourseResult>>(system, user, signal);
   const notesValue = (data as { notes?: unknown }).notes;
   const notes = Array.isArray(notesValue)
@@ -200,7 +209,8 @@ export async function analyzeSemiotic(
   text: string,
   signal?: AbortSignal
 ): Promise<SemioticResult> {
-  const { system, user } = buildSemioticPrompt(text);
+  const trimmed = trimForLLM(text);
+  const { system, user } = buildSemioticPrompt(trimmed.text);
   const data = await callJson<Partial<SemioticResult>>(system, user, signal);
   const nodes = normalizeNodes(data?.nodes);
   const ids = new Set(nodes.map((n) => n.id));
@@ -232,7 +242,9 @@ export async function analyzeComparison(
   textB: string,
   signal?: AbortSignal
 ): Promise<ComparisonMetrics> {
-  const { system, user } = buildComparisonPrompt(textA, textB);
+  const tA = trimForLLM(textA);
+  const tB = trimForLLM(textB);
+  const { system, user } = buildComparisonPrompt(tA.text, tB.text);
   const data = await callJson<Partial<ComparisonMetrics>>(system, user, signal);
   return {
     discourseSimilarity: clamp01to100(data?.discourseSimilarity),

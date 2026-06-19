@@ -27,6 +27,7 @@ import {
   computeHybridAuthorship,
   computeStatFeatures,
 } from "@/lib/analyze";
+import { trimForLLM, describeTrim } from "@/lib/textTrim";
 import { hasAnyConfiguredKey } from "@/store/settingsStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { deriveTitle } from "@/lib/utils";
@@ -49,6 +50,7 @@ export function TextAnalysis() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [progress, setProgress] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [trimNotice, setTrimNotice] = useState<string | null>(null);
 
   const [metrics, setMetrics] = useState<TextMetrics | null>(null);
   const [authorship, setAuthorship] = useState<HybridAuthorship | null>(null);
@@ -82,6 +84,10 @@ export function TextAnalysis() {
     setStatFeatures(null);
     setMarkers([]);
     setDiscourse(null);
+
+    // Проверяем, нужно ли обрезать текст для LLM
+    const trimInfo = trimForLLM(text);
+    setTrimNotice(describeTrim(trimInfo));
 
     resetCurrent({ sourceText: text, title: deriveTitle(text) });
 
@@ -124,6 +130,7 @@ export function TextAnalysis() {
     setMetrics(null);
     setAuthorship(null);
     setStatFeatures(null);
+    setTrimNotice(null);
     setMarkers([]);
     setDiscourse(null);
     setError(null);
@@ -201,6 +208,21 @@ export function TextAnalysis() {
           </div>
         )}
       </Card>
+
+      {/* Предупреждение об автообрезке */}
+      {trimNotice && (
+        <div className="flex items-start gap-2.5 rounded-xl border border-accent-amber/30 bg-accent-amber/[0.06] p-3.5 text-sm text-slate-300 animate-fade-in">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-accent-amber" />
+          <div>
+            <span className="font-medium text-accent-amber">
+              Текст автоматически сокращён
+            </span>
+            <p className="mt-0.5 text-xs leading-relaxed text-slate-400">
+              {trimNotice}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Results */}
       {phase === "idle" && (
