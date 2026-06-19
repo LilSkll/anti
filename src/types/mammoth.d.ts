@@ -24,9 +24,13 @@ declare module "mammoth/mammoth.browser" {
     value: string;
     messages: Array<{ type: string; message: string }>;
   }
-  export function extractRawText(
-    input: ArrayBuffer | Uint8Array
-  ): Promise<ExtractRawTextResult>;
+  /**
+   * Браузерная сборка принимает объект-обёртку { arrayBuffer }
+   * (а не сам ArrayBuffer, как Node-версия).
+   */
+  export function extractRawText(input: {
+    arrayBuffer: ArrayBuffer;
+  }): Promise<ExtractRawTextResult>;
   const _default: {
     extractRawText: typeof extractRawText;
   };

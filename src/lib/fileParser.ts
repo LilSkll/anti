@@ -40,12 +40,11 @@ async function readAsText(file: File): Promise<string> {
 
 async function readDocx(file: File): Promise<string> {
   const arrayBuffer = await file.arrayBuffer();
-  // mammoth — CommonJS-модуль, динамический импорт браузерной сборки
+  // mammoth — CommonJS-модуль, динамический импорт браузерной сборки.
+  // Браузерная сборка принимает { arrayBuffer } объект-обёртку, а не ArrayBuffer.
   const mammoth = await import("mammoth/mammoth.browser");
   try {
-    const result = await (mammoth as {
-      extractRawText: (i: ArrayBuffer) => Promise<{ value: string }>;
-    }).extractRawText(arrayBuffer);
+    const result = await mammoth.extractRawText({ arrayBuffer });
     return (result.value ?? "").trim();
   } catch (e) {
     throw new ParseError(
