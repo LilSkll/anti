@@ -28,7 +28,10 @@ import {
   computeStatFeatures,
 } from "@/lib/analyze";
 import { trimForLLM, describeTrim } from "@/lib/textTrim";
-import { hasAnyConfiguredKey } from "@/store/settingsStore";
+import {
+  hasAnyConfiguredKey,
+  settingsApi,
+} from "@/store/settingsStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { deriveTitle } from "@/lib/utils";
 import type {
@@ -86,7 +89,7 @@ export function TextAnalysis() {
     setDiscourse(null);
 
     // Проверяем, нужно ли обрезать текст для LLM
-    const trimInfo = trimForLLM(text);
+    const trimInfo = trimForLLM(text, settingsApi.getState().provider);
     setTrimNotice(describeTrim(trimInfo));
 
     resetCurrent({ sourceText: text, title: deriveTitle(text) });

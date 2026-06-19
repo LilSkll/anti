@@ -5,13 +5,35 @@
 // в минуту (TPM) и на размер запроса. Большой .docx легко даёт 40k+ токенов
 // и падает с 413. Здесь — обрезка по границам предложений, чтобы не разорвать
 // посреди слова или фразы.
+//
+// Лимиты зависят от провайдера: Groq free tier очень жёсткий (6k–12k TPM),
+// поэтому обрезаем агрессивно. OpenAI и Gemini позволяют большие запросы.
 // ===========================================================================
 
-/** Максимальное число символов исходного текста для одного LLM-запроса. */
-export const MAX_TEXT_CHARS = 24000;
+import type { ProviderId } from "@/types/analysis";
 
-/** Максимальное число слов (примерный потолок ~6000 слов ≈ 8–12k токенов). */
-export const MAX_TEXT_WORDS = 6000;
+/**
+ * Лимиты по провайдеру. Рассчитаны с запасом, чтобы промпт + текст + ответ
+// не превысили TPM-лимит. Цифры консервативные — берём половину от известного
+// лимита для надёжности (заодно оставляем место под system-prompt).
+ */
+const PROVIDER_LIMITS: Record<
+  ProviderId,
+  { maxChars: number; maxWords: number }
+> = {
+  // Groq free: llama-3.3-70b = 12k TPM, llama-3.1-8b = 6k TPM.
+  // Берём минимум — 4k слов / ~12k символов (≈ 5k токенов), чтобы пройти
+  // даже на 8b-модели с учётом системного промпта.
+  groq: { maxChars: 12000, maxWords: 1800 },
+  // OpenAI: 128k context, TPM высокие на free/paid. Берём щедрый лимит.
+  openai: { maxChars: 48000, maxWords: 12000 },
+  // Gemini: 1M TPM на free tier. Берём щедрый лимит.
+  gemini: { maxChars: 48000, maxWords: 12000 },
+};
+
+/** Дефолтные лимиты (если провайдер не указан) — безопасные, как у Groq. */
+export const MAX_TEXT_CHARS = 12000;
+export const MAX_TEXT_WORDS = 1800;
 
 export interface TrimResult {
   /** Обрезанный текст */
@@ -26,6 +48,8 @@ export interface TrimResult {
   finalChars: number;
   /** Сколько слов осталось после обрезки */
   finalWords: number;
+  /** Провайдер, под который обрезали */
+  provider: ProviderId;
 }
 
 function countWordsLocal(text: string): number {
@@ -48,12 +72,21 @@ function splitIntoSentences(text: string): string[] {
  * Обрезает текст до лимита, по границам предложений.
  * Если одно предложение длиннее лимита — режем по словам.
  */
-export function trimForLLM(input: string): TrimResult {
+export function trimForLLM(
+  input: string,
+  provider: ProviderId = "groq"
+): TrimResult {
+  const limits = PROVIDER_LIMITS[provider] ?? {
+    maxChars: MAX_TEXT_CHARS,
+    maxWords: MAX_TEXT_WORDS,
+  };
+  const { maxChars, maxWords } = limits;
+
   const originalChars = input.length;
   const originalWords = countWordsLocal(input);
 
   // Если текст уже в пределах лимита — возвращаем как есть
-  if (originalChars <= MAX_TEXT_CHARS && originalWords <= MAX_TEXT_WORDS) {
+  if (originalChars <= maxChars && originalWords <= maxWords) {
     return {
       text: input,
       trimmed: false,
@@ -61,6 +94,7 @@ export function trimForLLM(input: string): TrimResult {
       originalWords,
       finalChars: originalChars,
       finalWords: originalWords,
+      provider,
     };
   }
 
@@ -72,11 +106,11 @@ export function trimForLLM(input: string): TrimResult {
     const sentenceWords = countWordsLocal(sentence);
 
     // Проверяем лимит символов
-    if ((result + sentence).length > MAX_TEXT_CHARS) {
+    if ((result + sentence).length > maxChars) {
       break;
     }
     // Проверяем лимит слов
-    if (resultWords + sentenceWords > MAX_TEXT_WORDS) {
+    if (resultWords + sentenceWords > maxWords) {
       break;
     }
 
@@ -92,7 +126,7 @@ export function trimForLLM(input: string): TrimResult {
     let chars = 0;
     let wc = 0;
     for (const w of words) {
-      if (chars + w.length + 1 > MAX_TEXT_CHARS || wc + 1 > MAX_TEXT_WORDS) {
+      if (chars + w.length + 1 > maxChars || wc + 1 > maxWords) {
         break;
       }
       kept.push(w);
@@ -112,11 +146,12 @@ export function trimForLLM(input: string): TrimResult {
     originalWords,
     finalChars: result.length,
     finalWords: resultWords,
+    provider,
   };
 }
 
 /** Человекочитаемое сообщение об обрезке */
 export function describeTrim(t: TrimResult): string | null {
   if (!t.trimmed) return null;
-  return `Текст был слишком длинным для одного запроса к LLM (${t.originalWords} слов / ${t.originalChars.toLocaleString("ru-RU")} симв.) и автоматически обрезан до ${t.finalWords} слов / ${t.finalChars.toLocaleString("ru-RU")} симв. по границам предложений. Анализ выполнен по первой части текста.`;
+  return `Текст был слишком длинным для лимитов провайдера «${t.provider}» (${t.originalWords} слов / ${t.originalChars.toLocaleString("ru-RU")} симв.) и автоматически обрезан до ${t.finalWords} слов / ${t.finalChars.toLocaleString("ru-RU")} симв. по границам предложений. Анализ выполнен по первой части текста.`;
 }

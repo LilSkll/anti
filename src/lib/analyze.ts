@@ -1,4 +1,5 @@
 import { getProvider, type ChatMessage } from "@/lib/providers";
+import { settingsApi } from "@/store/settingsStore";
 import { safeJsonParse, clamp01to100 } from "@/lib/utils";
 import { buildMetricsPrompt } from "@/lib/prompts/text";
 import { buildMarkersPrompt } from "@/lib/prompts/markers";
@@ -69,7 +70,8 @@ export async function analyzeMetrics(
   text: string,
   signal?: AbortSignal
 ): Promise<TextMetrics> {
-  const trimmed = trimForLLM(text);
+  const provider = settingsApi.getState().provider;
+  const trimmed = trimForLLM(text, provider);
   const { system, user } = buildMetricsPrompt(trimmed.text);
   const data = await callJson<Partial<TextMetrics>>(system, user, signal);
   return normalizeMetrics(data);
@@ -141,7 +143,8 @@ export async function analyzeMarkers(
   text: string,
   signal?: AbortSignal
 ): Promise<Marker[]> {
-  const trimmed = trimForLLM(text);
+  const provider = settingsApi.getState().provider;
+  const trimmed = trimForLLM(text, provider);
   const { system, user } = buildMarkersPrompt(trimmed.text);
   const data = await callJson<{ markers?: unknown }>(system, user, signal);
   return normalizeMarkers(data?.markers);
@@ -159,7 +162,8 @@ export async function analyzeDiscourse(
   text: string,
   signal?: AbortSignal
 ): Promise<DiscourseResult> {
-  const trimmed = trimForLLM(text);
+  const provider = settingsApi.getState().provider;
+  const trimmed = trimForLLM(text, provider);
   const { system, user } = buildDiscoursePrompt(trimmed.text);
   const data = await callJson<Partial<DiscourseResult>>(system, user, signal);
   const notesValue = (data as { notes?: unknown }).notes;
@@ -209,7 +213,8 @@ export async function analyzeSemiotic(
   text: string,
   signal?: AbortSignal
 ): Promise<SemioticResult> {
-  const trimmed = trimForLLM(text);
+  const provider = settingsApi.getState().provider;
+  const trimmed = trimForLLM(text, provider);
   const { system, user } = buildSemioticPrompt(trimmed.text);
   const data = await callJson<Partial<SemioticResult>>(system, user, signal);
   const nodes = normalizeNodes(data?.nodes);
@@ -242,8 +247,9 @@ export async function analyzeComparison(
   textB: string,
   signal?: AbortSignal
 ): Promise<ComparisonMetrics> {
-  const tA = trimForLLM(textA);
-  const tB = trimForLLM(textB);
+  const provider = settingsApi.getState().provider;
+  const tA = trimForLLM(textA, provider);
+  const tB = trimForLLM(textB, provider);
   const { system, user } = buildComparisonPrompt(tA.text, tB.text);
   const data = await callJson<Partial<ComparisonMetrics>>(system, user, signal);
   return {
